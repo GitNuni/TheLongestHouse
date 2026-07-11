@@ -1,0 +1,78 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scenes/hallway/hallway.gd" id="1_hallway"]
+[ext_resource type="PackedScene" path="res://scenes/hallway/hallway_segment.tscn" id="2_segment"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cap"]
+albedo_color = Color(0.1, 0.09, 0.08, 1)
+roughness = 1.0
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_trigger"]
+size = Vector3(2.4, 2.6, 0.4)
+
+[node name="Hallway" type="Node3D"]
+script = ExtResource("1_hallway")
+
+[node name="Segments" type="Node3D" parent="."]
+
+[node name="Segment01" parent="Segments" instance=ExtResource("2_segment")]
+
+[node name="Segment02" parent="Segments" instance=ExtResource("2_segment")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -4)
+
+[node name="Segment03" parent="Segments" instance=ExtResource("2_segment")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -8)
+
+[node name="Segment04" parent="Segments" instance=ExtResource("2_segment")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -12)
+
+[node name="Segment05" parent="Segments" instance=ExtResource("2_segment")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -16)
+
+[node name="Segment06" parent="Segments" instance=ExtResource("2_segment")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -20)
+
+[node name="Segment07" parent="Segments" instance=ExtResource("2_segment")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -24)
+
+[node name="Segment08" parent="Segments" instance=ExtResource("2_segment")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -28)
+
+[node name="Segment09" parent="Segments" instance=ExtResource("2_segment")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -32)
+
+[node name="Segment10" parent="Segments" instance=ExtResource("2_segment")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -36)
+
+[node name="Segment11" parent="Segments" instance=ExtResource("2_segment")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -40)
+
+[node name="Segment12" parent="Segments" instance=ExtResource("2_segment")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -44)
+
+[node name="EntranceCap" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, 0.15)
+use_collision = true
+size = Vector3(2.8, 3, 0.3)
+material = SubResource("StandardMaterial3D_cap")
+
+[node name="FarCap" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, -48.15)
+use_collision = true
+size = Vector3(2.8, 3, 0.3)
+material = SubResource("StandardMaterial3D_cap")
+
+[node name="EntranceTrigger" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="EntranceTrigger"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, -10)
+shape = SubResource("BoxShape3D_trigger")
+
+[node name="DeepTrigger" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DeepTrigger"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, -34)
+shape = SubResource("BoxShape3D_trigger")
+
+[connection signal="body_entered" from="EntranceTrigger" to="." method="_on_entrance_trigger_body_entered"]
+[connection signal="body_entered" from="DeepTrigger" to="." method="_on_deep_trigger_body_entered"]

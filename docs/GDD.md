@@ -41,8 +41,10 @@ PC (Windows), single release target for v1. Console ports are out of scope for t
 
 ### Development Software
 
-- **Unreal Engine 5** — chosen for built-in multiplayer replication framework, Lumen realtime lighting, and free access to Quixel Megascans for realistic environment art without a dedicated art team.
+- **Godot 4 (4.7 stable)** — *decision updated 2026-07-11, superseding the UE5 choice in the PDF (Revision 2).* Chosen for its gentle learning curve for a team new to coding, fully text-based scenes/scripts (which makes AI-assisted development dramatically more effective — Claude can read, write, and review the entire project), built-in high-level multiplayer API for the co-op networking, and a natural fit for the PS2-era retro art direction (Option A). Free and open-source.
 - **Claude Code (Fable 5)** — AI pair-programming/agentic development, used heavily given all three team members are new to coding and game development.
+
+> **Note:** `GDD.pdf` (Revision 2) still says Unreal Engine 5 in this section — the engine decision above supersedes it. Update the PDF at the next revision.
 
 ### Genre
 

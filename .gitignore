@@ -1,0 +1,15 @@
+# Godot 4 imported/cache data — regenerated automatically, never commit
+.godot/
+
+# Exported builds
+build/
+export/
+*.exe
+*.pck
+
+# Export credentials (keystores, signing keys)
+export_credentials.cfg
+
+# OS cruft
+.DS_Store
+Thumbs.db

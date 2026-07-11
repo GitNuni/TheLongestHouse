@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="#0d0d12"/>
+  <!-- house silhouette -->
+  <path d="M64 22 L112 60 L104 60 L104 108 L24 108 L24 60 L16 60 Z" fill="#1c1c26" stroke="#3a3a4d" stroke-width="2"/>
+  <!-- door, slightly ajar -->
+  <rect x="56" y="76" width="16" height="32" fill="#050508"/>
+  <!-- windows, lit wrong -->
+  <rect x="34" y="70" width="14" height="14" fill="#e8d36b" opacity="0.9"/>
+  <rect x="80" y="70" width="14" height="14" fill="#2a2a38"/>
+  <!-- REC dot (bodycam) -->
+  <circle cx="112" cy="16" r="6" fill="#d84040"/>
+</svg>

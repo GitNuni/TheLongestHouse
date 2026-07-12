@@ -303,8 +303,15 @@ func _build_basement() -> void:
 	var ramp_box := BoxShape3D.new()
 	ramp_box.size = Vector3(0.9, 0.1, 4.3)
 	ramp_shape.shape = ramp_box
-	ramp_shape.transform = Transform3D(1, 0, 0, 0, 0.752, 0.658, 0, -0.658, 0.752,
-			7.2, -1.4, 1.7)
+	# In code, Transform3D takes the three basis axes as Vector3 COLUMNS plus
+	# the origin (the 12-float flat form only exists in .tscn files).
+	# This is a rotation about X tilting the ramp to descend toward -Z:
+	# top edge lands at (y 0, z 3.3), bottom at (y -2.8, z 0.1).
+	ramp_shape.transform = Transform3D(
+			Vector3(1, 0, 0),
+			Vector3(0, 0.752, -0.658),
+			Vector3(0, 0.658, 0.752),
+			Vector3(7.2, -1.4, 1.7))
 	ramp.add_child(ramp_shape)
 
 	# Ritual corner: circle of candles, sigils, and things on shelves.

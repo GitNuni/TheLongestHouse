@@ -10,6 +10,14 @@ Company-style run loop (10–20 min runs).
 decisions. (`docs/GDD.pdf` is the original Revision 2 document; the markdown
 version supersedes it where they differ, e.g. the engine choice.)
 
+**House generation and non-euclidean escalation are specified in
+`docs/design/house_and_corruption.md`** — read it before touching the
+generator, corruption, or set-piece systems. Key laws: the house must make
+sense before corrupting (canonical ranch plan is in the doc); connections lie
+before rooms do; wrongness follows the deniability curve (tiers 0–3); the
+front door never lies; runs start outside at the police cruiser; the haunting
+leaks outside further with each consecutive shift.
+
 ## Engine
 
 - **Godot 4.7 (stable)**, Forward+ renderer, GDScript.

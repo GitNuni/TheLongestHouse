@@ -321,6 +321,37 @@ static func crickets() -> AudioStreamWAV:
 	return _to_wav(samples, true)
 
 
+## The faint high whine that fades in near the house. Barely there — the
+## player should wonder if it's the game or their own ears.
+static func tinnitus() -> AudioStreamWAV:
+	var seconds := 6.0
+	var n := int(seconds * MIX_RATE)
+	var samples := PackedFloat32Array()
+	samples.resize(n)
+	for i in n:
+		var t := float(i) / MIX_RATE
+		var swell := 0.7 + 0.3 * sin(TAU * t / seconds)
+		samples[i] = sin(TAU * 8820.0 * t) * 0.035 * swell
+	return _to_wav(samples, true)
+
+
+## Soft broadband hiss for a TV tuned to nothing. Quieter and steadier than
+## static_burst — this one is furniture, not an event.
+static func tv_static() -> AudioStreamWAV:
+	var seconds := 4.0
+	var n := int(seconds * MIX_RATE)
+	var samples := PackedFloat32Array()
+	samples.resize(n)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 60050
+	var lp := 0.0
+	for i in n:
+		lp += (rng.randf_range(-1.0, 1.0) - lp) * 0.6
+		samples[i] = lp * 0.12
+	_fade_ends(samples)
+	return _to_wav(samples, true)
+
+
 ## Rising sub swell used just before something happens — or, crueller,
 ## before nothing happens at all.
 static func dread_swell() -> AudioStreamWAV:

@@ -1,5 +1,5 @@
 class_name HouseGenerator
-extends Node3D
+extends HouseBase
 ## Builds the entire house at runtime from MazeLib data: geometry, lights,
 ## doors, props, evidence, pickups, cultists, the looping hallway, phantom
 ## doors, and the pocket realms. Nothing about the interior is hand-placed;
@@ -10,8 +10,6 @@ extends Node3D
 ## dead ends and behind furniture. The impossible parts — the loop hall, the
 ## phantom doors, the field, the beach — are stitched in through one-way
 ## teleports, so the house's topology simply does not add up.
-
-signal evidence_logged(count: int, total: int)
 
 const CELL := 4.0
 const WALL_H := 3.0
@@ -28,9 +26,6 @@ const WALL_T := 0.2
 @export var maze_seed := 0
 
 var maze := MazeLib.new()
-var player_spawn := Vector3.ZERO
-var evidence_total := 0
-var evidence_found := 0
 
 var _astar := AStar2D.new()
 var _rng := RandomNumberGenerator.new()

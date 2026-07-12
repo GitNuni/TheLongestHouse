@@ -12,7 +12,7 @@ config_version=5
 
 config/name="The Longest House"
 config/description="Co-op bodycam survival horror. Respond to a disturbance call at a house that is far larger inside than it should be."
-run/main_scene="res://scenes/procgen/procgen_house.tscn"
+run/main_scene="res://scenes/ranch/ranch_house.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 

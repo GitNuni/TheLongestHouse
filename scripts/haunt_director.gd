@@ -23,7 +23,7 @@ var escalation := 0.0
 ## run target).
 var full_escalation_seconds := 600.0
 
-var _generator: HouseGenerator
+var _generator: HouseBase
 var _player: Player
 var _environment: Environment
 var _event_timer := 0.0
@@ -38,7 +38,7 @@ var _silenced := false
 var _rng := RandomNumberGenerator.new()
 
 
-func setup(generator: HouseGenerator, player: Player, environment: Environment) -> void:
+func setup(generator: HouseBase, player: Player, environment: Environment) -> void:
 	_generator = generator
 	_player = player
 	_environment = environment

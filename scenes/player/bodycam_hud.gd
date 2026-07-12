@@ -73,7 +73,7 @@ func _make_label(preset: Control.LayoutPreset, offset: Vector2) -> Label:
 	return label
 
 
-func attach(player: Player, generator: HouseGenerator) -> void:
+func attach(player: Player, generator: HouseBase) -> void:
 	player.health_changed.connect(_on_health_changed)
 	player.ammo_changed.connect(_on_ammo_changed)
 	player.tag_progress_changed.connect(_on_tag_progress)

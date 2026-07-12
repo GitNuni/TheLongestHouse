@@ -1,0 +1,100 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scenes/hallway/flicker_light.gd" id="1_flicker"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_concrete"]
+albedo_color = Color(0.34, 0.35, 0.37, 1)
+roughness = 0.95
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_steps"]
+albedo_color = Color(0.26, 0.19, 0.13, 1)
+roughness = 0.8
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ramp"]
+size = Vector3(1.2, 0.1, 2.9)
+
+[node name="StairFlight" type="Node3D"]
+
+[node name="Structure" type="CSGCombiner3D" parent="."]
+use_collision = true
+
+[node name="Shell" type="CSGBox3D" parent="Structure"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, -1.8)
+size = Vector3(1.8, 4.6, 4.2)
+material = SubResource("StandardMaterial3D_concrete")
+
+[node name="Cavity" type="CSGBox3D" parent="Structure"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, -1.8)
+operation = 2
+size = Vector3(1.2, 4, 3.6)
+material = SubResource("StandardMaterial3D_concrete")
+
+[node name="LandingSlab" type="CSGBox3D" parent="Structure"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.8, -0.6)
+size = Vector3(1.2, 1.6, 1.2)
+material = SubResource("StandardMaterial3D_concrete")
+
+[node name="EntryCut" type="CSGBox3D" parent="Structure"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
+operation = 2
+size = Vector3(1.2, 2.2, 0.8)
+material = SubResource("StandardMaterial3D_concrete")
+
+[node name="ExitCut" type="CSGBox3D" parent="Structure"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -3.6)
+operation = 2
+size = Vector3(1.2, 2.2, 0.8)
+material = SubResource("StandardMaterial3D_concrete")
+
+[node name="Step1" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.325, -1.35)
+size = Vector3(1.16, 0.25, 0.3)
+material = SubResource("StandardMaterial3D_steps")
+
+[node name="Step2" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.525, -1.65)
+size = Vector3(1.16, 0.25, 0.3)
+material = SubResource("StandardMaterial3D_steps")
+
+[node name="Step3" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.725, -1.95)
+size = Vector3(1.16, 0.25, 0.3)
+material = SubResource("StandardMaterial3D_steps")
+
+[node name="Step4" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.925, -2.25)
+size = Vector3(1.16, 0.25, 0.3)
+material = SubResource("StandardMaterial3D_steps")
+
+[node name="Step5" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.125, -2.55)
+size = Vector3(1.16, 0.25, 0.3)
+material = SubResource("StandardMaterial3D_steps")
+
+[node name="Step6" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.325, -2.85)
+size = Vector3(1.16, 0.25, 0.3)
+material = SubResource("StandardMaterial3D_steps")
+
+[node name="Step7" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.525, -3.15)
+size = Vector3(1.16, 0.25, 0.3)
+material = SubResource("StandardMaterial3D_steps")
+
+[node name="RampBody" type="StaticBody3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RampBody"]
+transform = Transform3D(1, 0, 0, 0, 0.832, 0.555, 0, -0.555, 0.832, 0, -0.84, -2.37)
+shape = SubResource("BoxShape3D_ramp")
+
+[node name="CeilingLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, -1.8)
+light_color = Color(0.65, 0.8, 0.75, 1)
+light_energy = 0.85
+light_size = 0.09
+shadow_enabled = true
+omni_range = 3.5
+script = ExtResource("1_flicker")
+flicker_amount = 0.45
+blackout_interval = 9.0
+distress_color = Color(0.5, 0.55, 0.6, 1)

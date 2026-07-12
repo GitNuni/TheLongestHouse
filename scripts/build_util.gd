@@ -93,7 +93,13 @@ static func haunt_light(parent: Node3D, pos: Vector3, color: Color, energy: floa
 	node.distance_fade_begin = 22.0
 	node.distance_fade_length = 8.0
 	node.distance_fade_shadow = 18.0
-	var light := node as FlickerLight
+	# Direct OmniLight3D -> FlickerLight is statically illegal (FlickerLight
+	# descends from Light3D, not OmniLight3D — cousins, not ancestors), even
+	# though the instance genuinely has the script. Erase the static type via
+	# Variant so only the runtime check applies; it passes because the script
+	# is attached.
+	var untyped: Variant = node
+	var light := untyped as FlickerLight
 	light.flicker_amount = flicker
 	light.blackout_interval = blackout_interval
 	light.add_to_group("haunt_lights")

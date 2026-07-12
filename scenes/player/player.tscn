@@ -32,4 +32,4 @@ script = ExtResource("2_flicker")
 flicker_amount = 0.06
 blackout_interval = 22.0
 blackout_duration = 0.12
-distress_color = Color(0.55, 0.62, 0.7)
+distress_color = Color(0.55, 0.62, 0.7, 1)

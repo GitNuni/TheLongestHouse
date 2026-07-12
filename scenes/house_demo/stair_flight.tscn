@@ -97,4 +97,4 @@ omni_range = 3.5
 script = ExtResource("1_flicker")
 flicker_amount = 0.45
 blackout_interval = 9.0
-distress_color = Color(0.5, 0.55, 0.6)
+distress_color = Color(0.5, 0.55, 0.6, 1)

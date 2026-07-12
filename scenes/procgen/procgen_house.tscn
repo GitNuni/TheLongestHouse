@@ -1,0 +1,50 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scenes/procgen/procgen_main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scenes/procgen/house_generator.gd" id="2_generator"]
+[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="3_player"]
+[ext_resource type="Script" path="res://scripts/haunt_director.gd" id="4_director"]
+[ext_resource type="Script" path="res://scenes/player/bodycam_hud.gd" id="5_hud"]
+
+[sub_resource type="Environment" id="Environment_procgen"]
+background_mode = 1
+background_color = Color(0, 0, 0, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.5, 0.48, 0.45, 1)
+ambient_light_energy = 0.07
+tonemap_mode = 2
+glow_enabled = true
+glow_intensity = 0.55
+glow_bloom = 0.15
+glow_hdr_threshold = 0.85
+ssao_enabled = true
+ssao_intensity = 3.0
+ssao_power = 2.2
+sdfgi_enabled = true
+adjustment_enabled = true
+adjustment_brightness = 0.92
+adjustment_contrast = 1.18
+adjustment_saturation = 0.72
+fog_enabled = true
+fog_light_color = Color(0.015, 0.015, 0.02, 1)
+fog_density = 0.075
+volumetric_fog_enabled = true
+volumetric_fog_density = 0.045
+volumetric_fog_albedo = Color(0.6, 0.6, 0.65, 1)
+
+[node name="ProcgenHouse" type="Node3D"]
+script = ExtResource("1_main")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_procgen")
+
+[node name="Generator" type="Node3D" parent="."]
+script = ExtResource("2_generator")
+
+[node name="Player" parent="." instance=ExtResource("3_player")]
+
+[node name="Director" type="Node" parent="."]
+script = ExtResource("4_director")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("5_hud")

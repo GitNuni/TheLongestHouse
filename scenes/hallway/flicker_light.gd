@@ -32,6 +32,10 @@ extends Light3D
 ## sitting bright and dipping dark.
 @export var inverted := false
 
+## Hard override used by the HauntDirector for regional blackouts — while
+## true the light is dead regardless of flicker state.
+var forced_off := false
+
 var _base_energy: float
 var _base_color: Color
 var _time := 0.0
@@ -48,6 +52,9 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if forced_off:
+		light_energy = 0.0
+		return
 	if flicker_amount <= 0.0:
 		light_energy = _base_energy
 		light_color = _base_color

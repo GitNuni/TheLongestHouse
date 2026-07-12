@@ -19,6 +19,22 @@ Full design: [docs/GDD.md](docs/GDD.md)
    standard build, not the .NET one.
 2. Clone this repo.
 3. Open Godot, click **Import**, and select `project.godot` in the repo root.
+4. Press **F5** to play the procedurally generated house (a new maze every
+   run). Older demos: `scenes/main.tscn` (the endless hallway) and
+   `scenes/house_demo/house_demo.tscn` (the hand-built haunted house) —
+   open one and press F6 to run it instead.
+
+## Controls
+
+| Input | Action |
+| --- | --- |
+| WASD + mouse | Move / look |
+| Shift | Sprint |
+| F | Flashlight |
+| Left click | Fire revolver (ammo is scarce) |
+| R | Reload |
+| E (hold) | Tag evidence with the bodycam |
+| Esc | Release the mouse |
 
 ## Tech
 

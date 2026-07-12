@@ -84,7 +84,7 @@ material = SubResource("StandardMaterial3D_steps")
 [node name="RampBody" type="StaticBody3D" parent="."]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="RampBody"]
-transform = Transform3D(1, 0, 0, 0, 0.832, -0.555, 0, 0.555, 0.832, 0, -0.84, -2.37)
+transform = Transform3D(1, 0, 0, 0, 0.832, 0.555, 0, -0.555, 0.832, 0, -0.84, -2.37)
 shape = SubResource("BoxShape3D_ramp")
 
 [node name="CeilingLight" type="OmniLight3D" parent="."]

@@ -62,4 +62,4 @@ func _apply_stage(index: int) -> void:
 		var light := node as FlickerLight
 		light.flicker_amount = stage["flicker"]
 		light.set_base_energy(stage["energy"])
-		light.light_color = stage["color"]
+		light.set_base_color(stage["color"])

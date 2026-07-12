@@ -952,7 +952,7 @@ shape = SubResource("BoxShape3D_trigger")
 
 [node name="RitualStubTrigger" type="Area3D" parent="."]
 script = ExtResource("3_teleport")
-destination = NodePath("../FoyerArrival")
+destination_path = NodePath("../FoyerArrival")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="RitualStubTrigger"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.85, -8.5, -42.8)

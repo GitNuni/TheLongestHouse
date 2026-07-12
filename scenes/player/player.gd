@@ -95,7 +95,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _dead:
 		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		var motion := event.relative * MOUSE_SENSITIVITY
+		# The compiler still sees `event` as plain InputEvent here, so cast
+		# before touching InputEventMouseMotion-only properties.
+		var mouse := event as InputEventMouseMotion
+		var motion := mouse.relative * MOUSE_SENSITIVITY
 		if _possessed_for > 0.0:
 			# The hands aren't fully yours: inverted, sluggish.
 			motion *= -0.55

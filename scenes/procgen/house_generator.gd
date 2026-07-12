@@ -34,16 +34,24 @@ var evidence_found := 0
 
 var _astar := AStar2D.new()
 var _rng := RandomNumberGenerator.new()
+var _furnisher: Furnisher
+var _room_types: Array[Furnisher.RoomType] = []
 var _mat_walls: Array[StandardMaterial3D] = []
+var _mat_wainscot: StandardMaterial3D
+var _mat_rail: StandardMaterial3D
 var _mat_floor: StandardMaterial3D
 var _mat_ceiling: StandardMaterial3D
 var _mat_trim: StandardMaterial3D
 var _mat_black: StandardMaterial3D
+var _mat_glass: StandardMaterial3D
 var _free_dead_ends: Array[Vector2i] = []
 var _loop_occupied := false
 var _loop_count := 0
 var _loop_exit_open := false
 var _loop_origin := Vector3.ZERO
+## Impossible doors are numbered in build order, starting at 2 — the front
+## door is room 1.
+var _door_number := 2
 
 
 func _ready() -> void:
@@ -52,6 +60,8 @@ func _ready() -> void:
 	maze.generate(grid_width, grid_height, seed_value, room_count, braid_fraction)
 	_free_dead_ends = maze.dead_ends.duplicate()
 
+	_furnisher = Furnisher.new(_rng, self)
+	_assign_room_types()
 	_make_materials()
 	_build_pathfinding()
 	_build_geometry()
@@ -105,17 +115,56 @@ func _cell_id(c: Vector2i) -> int:
 	return c.y * grid_width + c.x
 
 
+## How deep into the house a cell sits, 0 at the front door (south edge,
+## where the player spawns) to 1 at the far north. Drives the No-End House
+## gradient: rooms near the entrance are almost normal; deep rooms are not.
+func _wrongness_at(c: Vector2i) -> float:
+	return clampf(1.0 - float(c.y) / float(grid_height - 1), 0.0, 1.0)
+
+
+func _assign_room_types() -> void:
+	var pool: Array[Furnisher.RoomType] = [
+		Furnisher.RoomType.LIVING, Furnisher.RoomType.KITCHEN,
+		Furnisher.RoomType.DINING, Furnisher.RoomType.BEDROOM,
+		Furnisher.RoomType.BATH, Furnisher.RoomType.STUDY,
+		Furnisher.RoomType.NURSERY, Furnisher.RoomType.BEDROOM,
+	]
+	for i in maze.rooms.size():
+		_room_types.append(pool[i % pool.size()])
+	# Fisher-Yates with the run's own rng, so the layout stays seed-stable.
+	for i in range(_room_types.size() - 1, 0, -1):
+		var j := _rng.randi_range(0, i)
+		var swap := _room_types[i]
+		_room_types[i] = _room_types[j]
+		_room_types[j] = swap
+	# The deepest room is always the chair room. A chair. A lamp.
+	# The wrong number of shadows. (If you know, you know.)
+	var deepest := 0
+	var best_y := grid_height
+	for i in maze.rooms.size():
+		var mid_y := maze.rooms[i].position.y + maze.rooms[i].size.y / 2
+		if mid_y < best_y:
+			best_y = mid_y
+			deepest = i
+	if not _room_types.is_empty():
+		_room_types[deepest] = Furnisher.RoomType.CHAIR
+
+
 func _make_materials() -> void:
-	# Four near-identical wall tints assigned by location hash. The eye can't
-	# name the difference, but rooms feel subtly discontinuous — wrongness
-	# below the threshold of articulation.
-	for tint: Color in [Color(0.46, 0.42, 0.36), Color(0.44, 0.42, 0.39),
-			Color(0.47, 0.44, 0.35), Color(0.43, 0.4, 0.38)]:
+	# Wallpaper in four near-identical faded-domestic tints assigned by
+	# location hash. The eye can't name the difference, but rooms feel subtly
+	# discontinuous — wrongness below the threshold of articulation.
+	for tint: Color in [Color(0.58, 0.52, 0.42), Color(0.55, 0.5, 0.46),
+			Color(0.52, 0.54, 0.46), Color(0.57, 0.48, 0.44)]:
 		_mat_walls.append(BuildUtil.material(tint, 0.9))
-	_mat_floor = BuildUtil.material(Color(0.24, 0.18, 0.13), 0.8)
-	_mat_ceiling = BuildUtil.material(Color(0.32, 0.32, 0.3), 0.95)
-	_mat_trim = BuildUtil.material(Color(0.24, 0.19, 0.15), 0.85)
+	_mat_wainscot = BuildUtil.material(Color(0.3, 0.22, 0.16), 0.8)
+	_mat_rail = BuildUtil.material(Color(0.36, 0.27, 0.2), 0.75)
+	_mat_floor = BuildUtil.material(Color(0.33, 0.24, 0.16), 0.7)
+	_mat_ceiling = BuildUtil.material(Color(0.5, 0.48, 0.44), 0.95)
+	_mat_trim = BuildUtil.material(Color(0.28, 0.21, 0.16), 0.85)
 	_mat_black = BuildUtil.material(Color(0.015, 0.015, 0.02), 1.0)
+	_mat_glass = BuildUtil.material(Color(0.03, 0.04, 0.06), 0.05,
+			Color(0.05, 0.08, 0.12), 0.15)
 
 
 func _build_pathfinding() -> void:
@@ -141,52 +190,141 @@ func _build_geometry() -> void:
 		for x in grid_width:
 			var c := Vector2i(x, y)
 			var center := cell_center(c)
+			var floor_mat := _mat_floor
+			if maze.is_room(c):
+				floor_mat = _furnisher.floor_material(_room_types[maze.room_of_cell[c]])
 			BuildUtil.box(self, center + Vector3(0, -0.05, 0),
-					Vector3(CELL, 0.1, CELL), _mat_floor, true)
+					Vector3(CELL, 0.1, CELL), floor_mat, true)
 			BuildUtil.box(self, center + Vector3(0, WALL_H + 0.05, 0),
 					Vector3(CELL, 0.1, CELL), _mat_ceiling, true)
 			# North + West walls per cell; South/East come from neighbors,
-			# plus the outer boundary rows below.
+			# plus the outer boundary rows below. Outer walls get an
+			# inner-facing normal so they can grow windows.
 			if maze.wall_at(c, MazeLib.N):
-				_build_wall(center + Vector3(0, 0, -CELL / 2.0), true, c)
+				_build_wall(center + Vector3(0, 0, -CELL / 2.0), true, c,
+						Vector3(0, 0, 1) if y == 0 else Vector3.ZERO)
 			if maze.wall_at(c, MazeLib.W):
-				_build_wall(center + Vector3(-CELL / 2.0, 0, 0), false, c)
+				_build_wall(center + Vector3(-CELL / 2.0, 0, 0), false, c,
+						Vector3(1, 0, 0) if x == 0 else Vector3.ZERO)
 			if y == grid_height - 1 and maze.wall_at(c, MazeLib.S):
-				_build_wall(center + Vector3(0, 0, CELL / 2.0), true, c)
+				_build_wall(center + Vector3(0, 0, CELL / 2.0), true, c,
+						Vector3(0, 0, -1))
 			if x == grid_width - 1 and maze.wall_at(c, MazeLib.E):
-				_build_wall(center + Vector3(CELL / 2.0, 0, 0), false, c)
+				_build_wall(center + Vector3(CELL / 2.0, 0, 0), false, c,
+						Vector3(-1, 0, 0))
 
 	_place_lights()
 	_place_doors()
+	_decorate_corridors()
 
 
-func _build_wall(pos: Vector3, along_x: bool, c: Vector2i) -> void:
-	var size := Vector3(CELL + WALL_T, WALL_H, WALL_T) if along_x \
-			else Vector3(WALL_T, WALL_H, CELL + WALL_T)
-	BuildUtil.box(self, pos + Vector3(0, WALL_H / 2.0, 0), size, _wall_material(c), true)
+## Two-tone house wall: dark wainscot below, wallpaper above, chair rail
+## between — the single strongest "this is a home" visual cue. Outer walls
+## (inner_normal set) sometimes grow a window looking out onto nothing.
+func _build_wall(pos: Vector3, along_x: bool, c: Vector2i,
+		inner_normal := Vector3.ZERO) -> void:
+	var length := CELL + WALL_T
+	var wainscot_size := Vector3(length, 1.0, WALL_T + 0.04) if along_x \
+			else Vector3(WALL_T + 0.04, 1.0, length)
+	var paper_size := Vector3(length, WALL_H - 1.0, WALL_T) if along_x \
+			else Vector3(WALL_T, WALL_H - 1.0, length)
+	var rail_size := Vector3(length, 0.07, WALL_T + 0.07) if along_x \
+			else Vector3(WALL_T + 0.07, 0.07, length)
+	BuildUtil.box(self, pos + Vector3(0, 0.5, 0), wainscot_size, _mat_wainscot, true)
+	BuildUtil.box(self, pos + Vector3(0, (WALL_H + 1.0) / 2.0, 0), paper_size,
+			_wall_material(c), true)
+	BuildUtil.box(self, pos + Vector3(0, 1.02, 0), rail_size, _mat_rail)
+
+	if inner_normal != Vector3.ZERO and _rng.randf() < 0.35:
+		_build_window(pos + inner_normal * (WALL_T / 2.0 + 0.04), along_x)
+
+
+## A window on an outer wall. The glass is near-black with the faintest cold
+## sheen: there is an outside, and it has nothing in it.
+func _build_window(pos: Vector3, along_x: bool) -> void:
+	var center := pos + Vector3(0, 1.55, 0)
+	var pane_size := Vector3(1.3, 1.0, 0.04) if along_x else Vector3(0.04, 1.0, 1.3)
+	BuildUtil.box(self, center, pane_size, _mat_glass)
+	var bar_h := Vector3(1.46, 0.08, 0.07) if along_x else Vector3(0.07, 0.08, 1.46)
+	var bar_v := Vector3(0.08, 1.16, 0.07) if along_x else Vector3(0.07, 1.16, 0.08)
+	BuildUtil.box(self, center + Vector3(0, 0.54, 0), bar_h, _mat_trim)
+	BuildUtil.box(self, center + Vector3(0, -0.54, 0), bar_h, _mat_trim)
+	var side := Vector3(0.69, 0, 0) if along_x else Vector3(0, 0, 0.69)
+	BuildUtil.box(self, center + side, bar_v, _mat_trim)
+	BuildUtil.box(self, center - side, bar_v, _mat_trim)
+	BuildUtil.box(self, center, bar_v, _mat_trim)
 
 
 func _place_lights() -> void:
-	# Every room gets a light; corridors get sparse coverage so long dark
-	# gaps exist on purpose. Deeper rows (higher y) start out more broken.
-	for room in maze.rooms:
+	# Moody, not dark: rooms always lit, corridors lit every other cell so
+	# the house reads clearly — dread comes from what the light shows and
+	# how it behaves, not from squinting. Deeper cells burn colder and less
+	# reliably (the No-End gradient again).
+	for i in maze.rooms.size():
+		var room := maze.rooms[i]
+		if _room_types[i] == Furnisher.RoomType.CHAIR:
+			continue  # the chair room lights itself — one corner lamp only
 		var mid := Vector3((room.position.x + room.size.x / 2.0) * CELL, WALL_H - 0.3,
 				(room.position.y + room.size.y / 2.0) * CELL)
-		BuildUtil.haunt_light(self, mid, Color(1.0, 0.87, 0.7), 1.1, 7.0,
-				_rng.randf_range(0.1, 0.35), _rng.randf_range(14.0, 30.0))
+		_ceiling_fixture(mid, Color(1.0, 0.88, 0.72), 1.5, 8.5,
+				_rng.randf_range(0.08, 0.3), _rng.randf_range(16.0, 32.0))
 	for y in grid_height:
 		for x in grid_width:
 			var c := Vector2i(x, y)
 			if maze.is_room(c):
 				continue
-			if (x * 3 + y * 5 + int(_rng.randf() * 2.0)) % 4 != 0:
+			if (x + y) % 2 != 0:
 				continue
-			var depth := float(y) / float(grid_height)
-			BuildUtil.haunt_light(self, cell_center(c) + Vector3(0, WALL_H - 0.35, 0),
-					Color(1.0, lerpf(0.87, 0.78, depth), lerpf(0.7, 0.58, depth)),
-					lerpf(1.0, 0.7, depth), 5.5,
-					lerpf(0.15, 0.5, depth) * _rng.randf_range(0.7, 1.3),
-					lerpf(30.0, 10.0, depth))
+			var wrong := _wrongness_at(c)
+			_ceiling_fixture(cell_center(c) + Vector3(0, WALL_H - 0.3, 0),
+					Color(1.0, lerpf(0.88, 0.8, wrong), lerpf(0.72, 0.62, wrong)),
+					lerpf(1.35, 1.0, wrong), 6.5,
+					lerpf(0.1, 0.45, wrong) * _rng.randf_range(0.7, 1.3),
+					lerpf(34.0, 11.0, wrong))
+
+
+## A light plus its physical fixture — a ceiling rose and a glowing bulb —
+## so illumination has a visible source instead of hanging in the air.
+func _ceiling_fixture(pos: Vector3, color: Color, energy: float, range_m: float,
+		flicker: float, blackout_interval: float) -> void:
+	BuildUtil.box(self, pos + Vector3(0, 0.24, 0), Vector3(0.34, 0.05, 0.34), _mat_trim)
+	BuildUtil.box(self, pos + Vector3(0, 0.12, 0), Vector3(0.11, 0.2, 0.11),
+			BuildUtil.material(Color(0.9, 0.86, 0.74), 0.6, Color(1.0, 0.9, 0.7), 1.4))
+	BuildUtil.haunt_light(self, pos, color, energy, range_m, flicker, blackout_interval)
+
+
+## Runners, crooked pictures — the corridor half of the anti-Backrooms work.
+func _decorate_corridors() -> void:
+	var runner := BuildUtil.material(Color(0.34, 0.15, 0.13), 1.0)
+	var frame_wood := BuildUtil.material(Color(0.32, 0.24, 0.16), 0.8)
+	var print_dark := BuildUtil.material(Color(0.12, 0.11, 0.1), 0.9)
+	for y in grid_height:
+		for x in grid_width:
+			var c := Vector2i(x, y)
+			if maze.is_room(c):
+				continue
+			var center := cell_center(c)
+			if _rng.randf() < 0.4:
+				BuildUtil.box(self, center + Vector3(0, 0.012, 0),
+						Vector3(2.2, 0.02, 3.1), runner)
+			if _rng.randf() < 0.3:
+				for dir: int in MazeLib.DELTA:
+					if not maze.wall_at(c, dir):
+						continue
+					var n: Vector2i = MazeLib.DELTA[dir]
+					var wall_pos := center + Vector3(n.x, 0, n.y) \
+							* (CELL / 2.0 - WALL_T / 2.0 - 0.06)
+					var holder := Node3D.new()
+					holder.position = wall_pos + Vector3(0, 1.6, 0)
+					if n.x != 0:
+						holder.rotation.y = PI / 2.0
+					holder.rotation.z = _rng.randf_range(-0.09, 0.09)
+					add_child(holder)
+					BuildUtil.box(holder, Vector3.ZERO, Vector3(0.55, 0.7, 0.05),
+							frame_wood)
+					BuildUtil.box(holder, Vector3(0, 0, 0.012),
+							Vector3(0.44, 0.58, 0.04), print_dark)
+					break
 
 
 func _place_doors() -> void:
@@ -235,35 +373,13 @@ func _build_doorway(center: Vector3, offset: Vector2i, c: Vector2i) -> void:
 
 
 func _build_room_contents() -> void:
-	var crate := BuildUtil.material(Color(0.35, 0.28, 0.2), 0.85)
-	var cloth := BuildUtil.material(Color(0.3, 0.26, 0.24), 1.0)
-	for room in maze.rooms:
+	for i in maze.rooms.size():
+		var room := maze.rooms[i]
 		var origin := Vector3(room.position.x * CELL, 0, room.position.y * CELL)
 		var span := Vector3(room.size.x * CELL, 0, room.size.y * CELL)
-		for _i in _rng.randi_range(2, 5):
-			var pos := origin + Vector3(_rng.randf_range(0.8, span.x - 0.8), 0,
-					_rng.randf_range(0.8, span.z - 0.8))
-			match _rng.randi_range(0, 2):
-				0:  # crate stack
-					BuildUtil.box(self, pos + Vector3(0, 0.3, 0),
-							Vector3(0.6, 0.6, 0.6), crate, true)
-					if _rng.randf() < 0.4:
-						BuildUtil.box(self, pos + Vector3(0.1, 0.85, 0.05),
-								Vector3(0.5, 0.5, 0.5), crate, true)
-				1:  # table
-					BuildUtil.box(self, pos + Vector3(0, 0.72, 0),
-							Vector3(1.2, 0.06, 0.8), crate, true)
-					BuildUtil.box(self, pos + Vector3(0, 0.35, 0),
-							Vector3(0.14, 0.7, 0.14), crate)
-				2:  # shrouded something, person-sized, does not move
-					BuildUtil.box(self, pos + Vector3(0, 0.75, 0),
-							Vector3(0.55, 1.5, 0.45), cloth, true)
-		# Wall sigil, sometimes.
-		if _rng.randf() < 0.6:
-			var sigil := BuildUtil.material(Color(0.25, 0.06, 0.05), 1.0,
-					Color(0.7, 0.1, 0.08), 0.4)
-			BuildUtil.box(self, origin + Vector3(_rng.randf_range(1.0, span.x - 1.0),
-					1.5, 0.12), Vector3(0.7, 0.9, 0.04), sigil)
+		var mid_cell := Vector2i(room.position.x + room.size.x / 2,
+				room.position.y + room.size.y / 2)
+		_furnisher.furnish(_room_types[i], origin, span, _wrongness_at(mid_cell))
 
 
 func _take_dead_end() -> Vector2i:
@@ -432,6 +548,10 @@ func _build_phantom_doors() -> void:
 
 ## A doorframe with a lightless void where the panel should be. Stepping in
 ## fires `callable`. There is never a matching door where you come out.
+##
+## Every impossible door carries a number, scrawled and slightly crooked —
+## they count upward as the generator builds them, and where the count ends
+## is the house's little joke (readers of a certain story will know).
 func _build_dark_doorframe(center: Vector3, callable: Callable) -> void:
 	var holder := Node3D.new()
 	holder.position = center + Vector3(0, 0, -1.5)
@@ -440,6 +560,14 @@ func _build_dark_doorframe(center: Vector3, callable: Callable) -> void:
 	BuildUtil.box(holder, Vector3(0.55, 1.05, 0), Vector3(0.3, 2.1, 0.25), _mat_trim, true)
 	BuildUtil.box(holder, Vector3(0, 2.25, 0), Vector3(1.4, 0.3, 0.25), _mat_trim, true)
 	BuildUtil.box(holder, Vector3(0, 1.05, 0.08), Vector3(0.8, 2.1, 0.05), _mat_black)
+	var numeral := Label3D.new()
+	numeral.text = str(_door_number)
+	_door_number += 1
+	numeral.font_size = 220
+	numeral.modulate = Color(0.5, 0.12, 0.1)
+	numeral.position = Vector3(0, 1.7, 0.15)
+	numeral.rotation.z = _rng.randf_range(-0.12, 0.12)
+	holder.add_child(numeral)
 	BuildUtil.trigger(holder, Vector3(0, 1.05, 0), Vector3(0.8, 2.1, 0.3), callable)
 
 
@@ -456,6 +584,57 @@ func _teleport(player: Player, to: Vector3, yaw: float) -> void:
 func _build_pocket_realms() -> void:
 	_build_field()
 	_build_beach()
+	_build_forest()
+	_build_lobby_sign()
+
+
+## The sign at the front door. Cheerful. Unsigned. Load-bearing.
+func _build_lobby_sign() -> void:
+	var spawn_cell := Vector2i(grid_width / 2, grid_height - 1)
+	var sign := Label3D.new()
+	sign.text = "ROOM 1 THIS WAY.\nEIGHT MORE FOLLOW.\nREACH THE END AND YOU WIN!"
+	sign.font_size = 60
+	sign.modulate = Color(0.8, 0.76, 0.66)
+	sign.position = cell_center(spawn_cell) + Vector3(0, 1.9, -1.6)
+	add_child(sign)
+
+
+## Room five: trees grown INTO the house. No walls in sight, birdsong and
+## insects you can hear but never see — and the floor is still, undeniably,
+## the same wood paneling as the rest of the house. You never left.
+func _build_forest() -> void:
+	var origin := Vector3(-600, 0, 300)
+	# The floor matching the house is the whole trick — same material.
+	BuildUtil.box(self, origin + Vector3(0, -0.1, 0), Vector3(90, 0.2, 90),
+			_mat_floor, true)
+	var bark := BuildUtil.material(Color(0.25, 0.2, 0.15), 0.95)
+	var canopy := BuildUtil.material(Color(0.07, 0.12, 0.06), 1.0)
+	for _i in 28:
+		var pos := origin + Vector3(_rng.randf_range(-40, 40), 0,
+				_rng.randf_range(-40, 40))
+		if pos.distance_to(origin) < 6.0:
+			continue
+		var trunk_h := _rng.randf_range(3.0, 4.5)
+		BuildUtil.box(self, pos + Vector3(0, trunk_h / 2.0, 0),
+				Vector3(0.4, trunk_h, 0.4), bark, true)
+		BuildUtil.box(self, pos + Vector3(0, trunk_h + 0.8, 0),
+				Vector3(_rng.randf_range(2.2, 3.6), 1.6, _rng.randf_range(2.2, 3.6)),
+				canopy)
+	var bugs := BuildUtil.speaker(self, origin + Vector3(0, 2, 0),
+			AudioBank.crickets, -10.0, 120.0)
+	bugs.play()
+
+	# A dim lamp hangs where no ceiling is, over the way back.
+	var frame_pos := origin + Vector3(0, 0, -25)
+	_build_dark_doorframe(frame_pos + Vector3(0, 0, 1.5), func(player: Player) -> void:
+		var dest := _take_dead_end()
+		_teleport(player, cell_center(dest) + Vector3(0, 0.1, 0), 0.0))
+	BuildUtil.haunt_light(self, frame_pos + Vector3(0, 3.2, -1.5),
+			Color(0.95, 0.9, 0.75), 1.3, 10.0, 0.2, 40.0)
+
+	var entry := _take_dead_end()
+	_build_dark_doorframe(cell_center(entry), func(player: Player) -> void:
+		_teleport(player, origin + Vector3(0, 0.1, 8), 0.0))
 
 
 func _build_field() -> void:
@@ -486,7 +665,7 @@ func _build_field() -> void:
 	var entry := _take_dead_end()
 	_build_dark_doorframe(cell_center(entry), func(player: Player) -> void:
 		# Arrive 25 m from the lit doorframe, facing it across the dark.
-		_teleport(player, origin + Vector3(0, 0.1, 5), PI))
+		_teleport(player, origin + Vector3(0, 0.1, 5), 0.0))
 
 
 func _build_beach() -> void:
@@ -516,4 +695,4 @@ func _build_beach() -> void:
 
 	var entry := _take_dead_end()
 	_build_dark_doorframe(cell_center(entry), func(player: Player) -> void:
-		_teleport(player, origin + Vector3(0, 0.1, 40), PI))
+		_teleport(player, origin + Vector3(0, 0.1, 40), 0.0))

@@ -14,7 +14,7 @@ extends Node3D
 
 signal logged(evidence: Evidence)
 
-enum Kind {SIGIL_PAGE, BONES, RECORDER, IDOL}
+enum Kind {SIGIL_PAGE, BONES, RECORDER, IDOL, NOTE}
 
 const TAG_SECONDS := 1.4
 
@@ -53,6 +53,19 @@ func _ready() -> void:
 					Color(0.12, 0.08, 0.07), 0.95, Color(0.6, 0.1, 0.05), 0.3)
 			BuildUtil.box(self, Vector3(0, 0.15, 0), Vector3(0.1, 0.3, 0.1), _pulse_material)
 			BuildUtil.box(self, Vector3(0, 0.32, 0), Vector3(0.16, 0.06, 0.06), _pulse_material)
+		Kind.NOTE:
+			# A clean white envelope, hand-addressed. "From Management."
+			_pulse_material = BuildUtil.material(
+					Color(0.88, 0.86, 0.8), 0.85, Color(0.8, 0.75, 0.6), 0.1)
+			BuildUtil.box(self, Vector3(0, 0.008, 0), Vector3(0.24, 0.012, 0.16),
+					_pulse_material)
+			var label := Label3D.new()
+			label.text = "from management"
+			label.font_size = 26
+			label.modulate = Color(0.25, 0.2, 0.2)
+			label.position = Vector3(0, 0.02, 0)
+			label.rotation.x = -PI / 2.0
+			add_child(label)
 
 	# Tagging target — layer 4, see class docs.
 	var body := StaticBody3D.new()

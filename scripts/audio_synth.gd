@@ -290,6 +290,37 @@ static func blip() -> AudioStreamWAV:
 	return _to_wav(samples, false)
 
 
+## Night insects for the indoor forest: chirp trains you can hear clearly
+## and will never, ever see. Several offset trains so it reads as a
+## population, not a loop.
+static func crickets() -> AudioStreamWAV:
+	var seconds := 7.0
+	var n := int(seconds * MIX_RATE)
+	var samples := PackedFloat32Array()
+	samples.resize(n)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 24601
+	for train in 4:
+		var freq := rng.randf_range(3400.0, 4600.0)
+		var interval := rng.randf_range(0.9, 1.4)
+		var offset := rng.randf_range(0.0, interval)
+		var t := offset
+		while t < seconds - 0.2:
+			# One chirp = three quick pulses.
+			for pulse in 3:
+				var start := int((t + pulse * 0.055) * MIX_RATE)
+				var length := int(0.03 * MIX_RATE)
+				for i in length:
+					if start + i >= n:
+						break
+					var pt := float(i) / MIX_RATE
+					samples[start + i] += sin(TAU * freq * pt) \
+							* sin(PI * float(i) / float(length)) * 0.1
+			t += interval
+	_fade_ends(samples)
+	return _to_wav(samples, true)
+
+
 ## Rising sub swell used just before something happens — or, crueller,
 ## before nothing happens at all.
 static func dread_swell() -> AudioStreamWAV:

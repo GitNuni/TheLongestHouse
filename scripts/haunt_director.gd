@@ -32,7 +32,8 @@ var _drone: AudioStreamPlayer
 var _heartbeat: AudioStreamPlayer
 var _whisper: AudioStreamPlayer
 var _swell: AudioStreamPlayer
-var _base_fog := 0.075
+var _base_fog := 0.045
+var _base_saturation := 0.82
 var _silenced := false
 var _rng := RandomNumberGenerator.new()
 
@@ -41,6 +42,11 @@ func setup(generator: HouseGenerator, player: Player, environment: Environment) 
 	_generator = generator
 	_player = player
 	_environment = environment
+	# Read the scene's authored mood as the calm baseline; escalation
+	# darkens from wherever the artist set it, not from hardcoded values.
+	if environment != null:
+		_base_fog = environment.fog_density
+		_base_saturation = environment.adjustment_saturation
 	_rng.randomize()
 
 	_drone = _make_player(AudioBank.room_drone, -18.0, true)
@@ -81,12 +87,14 @@ func _process(delta: float) -> void:
 func _update_ambience(delta: float) -> void:
 	if _silenced:
 		return
-	# The drone thickens with escalation; fog closes in.
+	# The drone thickens with escalation; fog closes in — but stays "moody",
+	# never pitch black. The worst it gets is about double the calm baseline.
 	_drone.volume_db = lerpf(-18.0, -9.0, escalation)
 	if _environment != null:
-		var target_fog := lerpf(_base_fog, _base_fog * 2.2, escalation)
+		var target_fog := lerpf(_base_fog, _base_fog * 2.0, escalation)
 		_environment.fog_density = lerpf(_environment.fog_density, target_fog, delta * 0.2)
-		_environment.adjustment_saturation = lerpf(0.72, 0.45, escalation)
+		_environment.adjustment_saturation = lerpf(_base_saturation,
+				_base_saturation * 0.72, escalation)
 
 
 func _update_heartbeat() -> void:
